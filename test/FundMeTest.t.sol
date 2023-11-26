@@ -4,15 +4,15 @@ pragma solidity ^0.8.19;
 
 import {Test, console} from "../lib/forge-std/src/Test.sol";
 import {FundMe} from "../src/FundMe.sol";
+import {DeployFundMe} from "../script/DeployFundMe.s.sol";
 
 contract FundMeTest is Test {
     FundMe fundMe;
 
     // this happends first
     function setUp() external {
-        // me -> FundMeTest -> FundMe()
-        // FundMeTest == owner
-        fundMe = new FundMe();
+        DeployFundMe deployFundMe = new DeployFundMe();
+        fundMe = deployFundMe.run();
     }
 
     function testMinimumDollarIsFive() public {
@@ -20,9 +20,7 @@ contract FundMeTest is Test {
     }
 
     function testOwnerIsMsgSender() public {
-        console.log(fundMe.i_owner());
-        console.log(msg.sender);
-        assertEq(fundMe.i_owner(), address(this));
+        assertEq(fundMe.i_owner(), msg.sender);
     }
 
     function testPriceFeedVersionIsAccurate() public {
