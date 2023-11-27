@@ -27,7 +27,7 @@ contract FundMeTest is Test {
     }
 
     function testOwnerIsMsgSender() public {
-        assertEq(fundMe.i_owner(), msg.sender);
+        assertEq(fundMe.getOwner(), msg.sender);
     }
 
     function testPriceFeedVersionIsAccurate() public {
@@ -50,25 +50,45 @@ contract FundMeTest is Test {
         assertEq(amountFunded, SEND_VALUE);
     }
 
-    function testAddsFunderToArrayOfFunders() public {
+    function testAddsFunderToArrayOfFunders() public funded {
         // ! It restarts after every test method and calls setUp() method again before every test method
         // ! EVEN if i execute whole test file at once !!!!!!!!!!!!
-        vm.prank(USER);
-        fundMe.fund{value: SEND_VALUE}();
         // console.log(fundMe.getFunder(0));
 
         address funder = fundMe.getFunder(0);
         assertEq(funder, USER);
     }
 
-    function testOnlyOwnerCanWithdraw() public {
-        vm.prank(USER);
-        fundMe.fund{value: SEND_VALUE}();
-
+    function testOnlyOwnerCanWithdraw() public funded {
         // ! This will be successfull test, but who is the msg.sender ???
         vm.expectRevert();
         // ! expectRevert() ignores this line bcz its not a transaction, it is vm cheatcode
         vm.prank(USER);
         fundMe.withdraw();
+    }
+
+    function testWithdrawWithASingleFunder() public funded {
+        // Arrange -> arrange and setup the test
+        uint256 startingOwnerBalance = fundMe.getOwner().balance;
+
+        uint256 startingFundMeBalance = address(fundMe).balance; // === SEND_VALUE
+        // Act -> do the action that you want to test
+        vm.prank(fundMe.getOwner());
+        fundMe.withdraw();
+        // Assert -> assert the test
+        uint256 endingOwnerBalance = fundMe.getOwner().balance;
+        uint256 endingFundMeBalance = address(fundMe).balance;
+        assertEq(endingFundMeBalance, 0);
+        // ! shouldnt we waste some money on gas ???
+        assertEq(
+            startingFundMeBalance + startingOwnerBalance,
+            endingOwnerBalance
+        );
+    }
+
+    modifier funded() {
+        vm.prank(USER);
+        fundMe.fund{value: SEND_VALUE}();
+        _;
     }
 }

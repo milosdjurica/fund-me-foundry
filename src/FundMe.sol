@@ -21,10 +21,12 @@ error FundMe__NotOwner();
 
 contract FundMe {
     using PriceConverter for uint256;
-    address public immutable i_owner;
-    AggregatorV3Interface private s_priceFeed;
 
     uint256 public constant MINIMUM_USD = 5e18;
+
+    address private immutable i_owner;
+    AggregatorV3Interface private s_priceFeed;
+
     address[] private s_funders;
     mapping(address funder => uint256 amount) private s_addressToAmountFunded;
 
@@ -84,5 +86,9 @@ contract FundMe {
 
     function getFunder(uint256 index) external view returns (address) {
         return s_funders[index];
+    }
+
+    function getOwner() external view returns (address) {
+        return i_owner;
     }
 }
