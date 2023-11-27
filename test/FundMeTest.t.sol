@@ -27,4 +27,10 @@ contract FundMeTest is Test {
         console.log(fundMe.getVersion());
         assertEq(fundMe.getVersion(), 4);
     }
+
+    function testFundFailsWithoutEnoughETH() public {
+        vm.expectRevert(); // next line should revert !
+        // assert(This tx fails/reverts)
+        fundMe.fund(); // sends 0 value which is less than 5$
+    }
 }
