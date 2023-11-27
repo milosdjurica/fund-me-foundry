@@ -109,7 +109,8 @@ contract FundMeTest is Test {
 
         // ! everthing in between start and stop is sent by owner
         vm.startPrank(fundMe.getOwner());
-        fundMe.withdraw();
+        // saved around 800 gas with this
+        fundMe.cheaperWithdraw();
         vm.stopPrank();
 
         // ASSERT
