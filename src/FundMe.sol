@@ -7,35 +7,53 @@ import {PriceConverter} from "./PriceConverter.sol";
 
 error FundMe__NotOwner();
 
+// !
+// Functions Order:
+// constructor
+// receive
+// fallback
+// external
+// public
+// internal
+// private
+// view / pure
+// !
+
 contract FundMe {
     using PriceConverter for uint256;
     address public immutable i_owner;
     AggregatorV3Interface private s_priceFeed;
+
+    uint256 public constant MINIMUM_USD = 5e18;
+    address[] private s_funders;
+    mapping(address funder => uint256 amount) private s_addressToAmountFunded;
 
     constructor(address priceFeed) {
         i_owner = msg.sender;
         s_priceFeed = AggregatorV3Interface(priceFeed);
     }
 
-    uint256 public constant MINIMUM_USD = 5e18;
-    address[] public funders;
-    mapping(address funder => uint256 amount) public addressToAmountFunded;
+    modifier onlyOwner() {
+        // require(msg.sender == i_owner, "Sender is not owner!");
+        if (msg.sender != i_owner) revert FundMe__NotOwner();
+        _;
+    }
 
     function fund() public payable {
         require(
             msg.value.getConversionRate(s_priceFeed) >= MINIMUM_USD,
             "Didn't send enough ETH!"
         );
-        funders.push(msg.sender);
-        addressToAmountFunded[msg.sender] += msg.value;
+        s_funders.push(msg.sender);
+        s_addressToAmountFunded[msg.sender] += msg.value;
     }
 
     function withdraw() public onlyOwner {
-        for (uint256 i = 0; i < funders.length; i++) {
-            address funder = funders[i];
-            addressToAmountFunded[funder] = 0;
+        for (uint256 i = 0; i < s_funders.length; i++) {
+            address funder = s_funders[i];
+            s_addressToAmountFunded[funder] = 0;
         }
-        funders = new address[](0);
+        s_funders = new address[](0);
 
         (bool callSuccess, ) = payable(msg.sender).call{
             value: address(this).balance
@@ -47,12 +65,7 @@ contract FundMe {
         return s_priceFeed.version();
     }
 
-    modifier onlyOwner() {
-        // require(msg.sender == i_owner, "Sender is not owner!");
-        if (msg.sender != i_owner) revert FundMe__NotOwner();
-        _;
-    }
-
+    // !receive and fallback
     // if someone send money without calling fund function, it will still redirect him to it!!!
     receive() external payable {
         fund();
@@ -60,5 +73,16 @@ contract FundMe {
 
     fallback() external payable {
         fund();
+    }
+
+    // ! View/Pure functions (Getters)
+    function getAddressToAmountFunded(
+        address fundingAddress
+    ) external view returns (uint256) {
+        return s_addressToAmountFunded[fundingAddress];
+    }
+
+    function getFunder(uint256 index) external view returns (address) {
+        return s_funders[index];
     }
 }
