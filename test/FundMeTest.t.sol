@@ -37,14 +37,14 @@ contract FundMeTest is Test {
 
     function testFundFailsWithoutEnoughETH() public {
         vm.expectRevert(); // next line should revert !
-        // assert(This tx fails/reverts)
+        // its like assert(This tx fails/reverts)
         fundMe.fund(); // sends 0 value which is less than 5$
     }
 
     function testFundUpdatesFundedDataStructure() public {
         vm.prank(USER); // next tx will be sent by user
         fundMe.fund{value: SEND_VALUE}();
-        console.log(fundMe.getFunder(0));
+        // console.log(fundMe.getFunder(0));
 
         uint256 amountFunded = fundMe.getAddressToAmountFunded(USER);
         assertEq(amountFunded, SEND_VALUE);
@@ -55,9 +55,20 @@ contract FundMeTest is Test {
         // ! EVEN if i execute whole test file at once !!!!!!!!!!!!
         vm.prank(USER);
         fundMe.fund{value: SEND_VALUE}();
-        console.log(fundMe.getFunder(0));
+        // console.log(fundMe.getFunder(0));
 
         address funder = fundMe.getFunder(0);
         assertEq(funder, USER);
+    }
+
+    function testOnlyOwnerCanWithdraw() public {
+        vm.prank(USER);
+        fundMe.fund{value: SEND_VALUE}();
+
+        // ! This will be successfull test, but who is the msg.sender ???
+        vm.expectRevert();
+        // ! expectRevert() ignores this line bcz its not a transaction, it is vm cheatcode
+        vm.prank(USER);
+        fundMe.withdraw();
     }
 }
