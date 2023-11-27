@@ -74,13 +74,8 @@ contract FundMeTest is Test {
 
         uint256 startingFundMeBalance = address(fundMe).balance; // === SEND_VALUE
         // Act -> do the action that you want to test
-        uint256 gasStart = gasleft();
-        vm.txGasPrice(GAS_PRICE);
         vm.prank(fundMe.getOwner());
         fundMe.withdraw();
-        uint256 gasEnd = gasleft();
-        uint256 gasUsed = (gasStart - gasEnd) * tx.gasprice;
-        console.log(gasUsed);
 
         // Assert -> assert the test
         uint256 endingOwnerBalance = fundMe.getOwner().balance;
