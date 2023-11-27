@@ -13,6 +13,7 @@ contract FundMeTest is Test {
     // address USER2 = makeAddr("user2");
     uint constant SEND_VALUE = 0.1 ether;
     uint constant STARTING_BALANCE = 10 ether;
+    uint constant GAS_PRICE = 1;
 
     // this happends first
     function setUp() external {
@@ -73,16 +74,54 @@ contract FundMeTest is Test {
 
         uint256 startingFundMeBalance = address(fundMe).balance; // === SEND_VALUE
         // Act -> do the action that you want to test
+        uint256 gasStart = gasleft();
+        vm.txGasPrice(GAS_PRICE);
         vm.prank(fundMe.getOwner());
         fundMe.withdraw();
+        uint256 gasEnd = gasleft();
+        uint256 gasUsed = (gasStart - gasEnd) * tx.gasprice;
+        console.log(gasUsed);
+
         // Assert -> assert the test
         uint256 endingOwnerBalance = fundMe.getOwner().balance;
         uint256 endingFundMeBalance = address(fundMe).balance;
         assertEq(endingFundMeBalance, 0);
         // ! shouldnt we waste some money on gas ???
+        // https://youtu.be/sas02qSFZ74?t=5716 -> mentioned here
+        // ! On Anvil chain default gas price is 0 !!!!
         assertEq(
             startingFundMeBalance + startingOwnerBalance,
             endingOwnerBalance
+        );
+    }
+
+    function testWithdrawFromMultipleFunders() public funded {
+        // ARRANGE
+        uint160 numberOfFunders = 10;
+        uint160 startingFunderIndex = 1;
+        for (uint160 i = startingFunderIndex; i < numberOfFunders; i++) {
+            // vm.prank
+            // vm.deal
+            hoax(address(i), SEND_VALUE);
+            // fund the fundMe
+            fundMe.fund{value: SEND_VALUE}();
+        }
+
+        uint256 startingOwnerBalance = fundMe.getOwner().balance;
+        uint256 startingFundMeBalance = address(fundMe).balance;
+
+        // ACT
+
+        // ! everthing in between start and stop is sent by owner
+        vm.startPrank(fundMe.getOwner());
+        fundMe.withdraw();
+        vm.stopPrank();
+
+        // ASSERT
+        assert(address(fundMe).balance == 0);
+        assert(
+            startingFundMeBalance + startingOwnerBalance ==
+                fundMe.getOwner().balance
         );
     }
 
