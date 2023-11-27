@@ -7,11 +7,20 @@
 pragma solidity ^0.8.19;
 
 import {Script} from "../lib/forge-std/src/Script.sol";
+import {MockV3Aggregator} from "../test/mocks/MockV3Aggregator.sol";
 
 contract HelperConfig is Script {
     // if on local anvil chain, deploy mocks
     // Otherwise, grab the existing address from the live network
+
+    struct NetworkConfig {
+        address priceFeed; // ETH/USD price feed address
+    }
+
     NetworkConfig public activeNetworkConfig;
+
+    uint8 public constant DECIMALS = 8;
+    int public constant INITIAL_PRICE = 3000e8;
 
     constructor() {
         // ! this is Sepolia chain ID is 11155111 and for mainnet it is 1
@@ -20,12 +29,8 @@ contract HelperConfig is Script {
         } else if (block.chainid == 1) {
             activeNetworkConfig = getMainnetETHConfig();
         } else {
-            activeNetworkConfig = getMainnetETHConfig();
+            activeNetworkConfig = getOrCreateAnvilETHConfig();
         }
-    }
-
-    struct NetworkConfig {
-        address priceFeed; // ETH/USD price feed address
     }
 
     function getSepoliaETHConfig() public pure returns (NetworkConfig memory) {
@@ -44,7 +49,19 @@ contract HelperConfig is Script {
             });
     }
 
-    function getAnvilETHConfig() public pure returns (NetworkConfig memory) {
-        // price feed address
+    function getOrCreateAnvilETHConfig() public returns (NetworkConfig memory) {
+        // ! it is 0 by default, so if we already DID set the priceFeed, we don't want to create another one
+        if (activeNetworkConfig.priceFeed != address(0)) {
+            return activeNetworkConfig;
+        }
+
+        vm.startBroadcast();
+        MockV3Aggregator mockPriceFeed = new MockV3Aggregator(
+            DECIMALS,
+            INITIAL_PRICE
+        );
+        vm.stopBroadcast();
+
+        return NetworkConfig({priceFeed: address(mockPriceFeed)});
     }
 }
