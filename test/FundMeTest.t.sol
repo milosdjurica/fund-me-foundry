@@ -10,6 +10,7 @@ contract FundMeTest is Test {
     FundMe fundMe;
 
     address USER = makeAddr("user");
+    // address USER2 = makeAddr("user2");
     uint constant SEND_VALUE = 0.1 ether;
     uint constant STARTING_BALANCE = 10 ether;
 
@@ -18,6 +19,7 @@ contract FundMeTest is Test {
         DeployFundMe deployFundMe = new DeployFundMe();
         fundMe = deployFundMe.run();
         vm.deal(USER, STARTING_BALANCE);
+        // vm.deal(USER2, STARTING_BALANCE);
     }
 
     function testMinimumDollarIsFive() public {
@@ -42,7 +44,20 @@ contract FundMeTest is Test {
     function testFundUpdatesFundedDataStructure() public {
         vm.prank(USER); // next tx will be sent by user
         fundMe.fund{value: SEND_VALUE}();
+        console.log(fundMe.getFunder(0));
+
         uint256 amountFunded = fundMe.getAddressToAmountFunded(USER);
         assertEq(amountFunded, SEND_VALUE);
+    }
+
+    function testAddsFunderToArrayOfFunders() public {
+        // ! It restarts after every test method and calls setUp() method again before every test method
+        // ! EVEN if i execute whole test file at once !!!!!!!!!!!!
+        vm.prank(USER);
+        fundMe.fund{value: SEND_VALUE}();
+        console.log(fundMe.getFunder(0));
+
+        address funder = fundMe.getFunder(0);
+        assertEq(funder, USER);
     }
 }
